@@ -192,9 +192,12 @@ typedef
          to the top 24 bits of ITSTATE being zero.
       */
       UInt guest_ITSTATE;
+      
+      /* Used for Darwin syscall dispatching. */
+      UInt guest_SC_CLASS;
 
       /* Padding to make it have an 16-aligned size */
-      UInt padding1;
+      // UInt padding1;
    }
    VexGuestARMState;
 
@@ -214,6 +217,19 @@ void LibVEX_GuestARM_initialise ( /*OUT*/VexGuestARMState* vex_state );
 
 extern
 UInt LibVEX_GuestARM_get_cpsr ( /*IN*/const VexGuestARMState* vex_state );
+
+/* Set the carry flag in the given state to 'new_carry_flag', which
+   should be zero or one. */
+extern
+void
+LibVEX_GuestARM_put_cpsr_c ( UInt new_carry_flag,
+                              /*MOD*/VexGuestARMState* vex_state );
+
+/* Set the cpsr in the given state to the value in 'cpsr'*/
+extern
+void
+LibVEX_GuestARM_set_cpsr ( UInt cpsr,
+                              /*MOD*/VexGuestARMState* vex_state );
 
 
 #endif /* ndef __LIBVEX_PUB_GUEST_ARM_H */

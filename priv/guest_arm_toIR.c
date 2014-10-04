@@ -488,6 +488,9 @@ static IRExpr* align4if ( IRExpr* e, Bool b )
 #define OFFB_CMSTART  offsetof(VexGuestARMState,guest_CMSTART)
 #define OFFB_CMLEN    offsetof(VexGuestARMState,guest_CMLEN)
 
+#define OFFB_IP_AT_SYSCALL   offsetof(VexGuestARMState,guest_IP_AT_SYSCALL)
+
+
 
 /* ---------------- Integer registers ---------------- */
 
@@ -16019,12 +16022,14 @@ DisResult disInstr_ARM_WRK (
    /* --------------------- Svc --------------------- */
    if (BITS8(1,1,1,1,0,0,0,0) == (INSN(27,20) & BITS8(1,1,1,1,0,0,0,0))) {
       UInt imm24 = (insn >> 0) & 0xFFFFFF;
-      if (imm24 == 0) {
+      if ((imm24 == 0) || (imm24 == 0x80)) {
          /* A syscall.  We can't do this conditionally, hence: */
          if (condT != IRTemp_INVALID) {
             mk_skip_over_A32_if_cond_is_false( condT );
          }
          // AL after here
+         stmt( IRStmt_Put( OFFB_IP_AT_SYSCALL,
+                           mkU32(guest_R15_curr_instr_notENC) ) );
          llPutIReg(15, mkU32( guest_R15_curr_instr_notENC + 4 ));
          dres.jk_StopHere = Ijk_Sys_syscall;
          dres.whatNext    = Dis_StopHere;
@@ -18279,7 +18284,7 @@ DisResult disInstr_THUMB_WRK (
    case BITS8(1,1,0,1,1,1,1,1): {
       /* ---------------- SVC ---------------- */
       UInt imm8 = INSN0(7,0);
-      if (imm8 == 0) {
+      if ((imm8 == 0) || (imm8 == 0x80)) {
          /* A syscall.  We can't do this conditionally, hence: */
          mk_skip_over_T16_if_cond_is_false( condT );
          // FIXME: what if we have to back up and restart this insn?
@@ -18288,6 +18293,8 @@ DisResult disInstr_THUMB_WRK (
          // stash pseudo-reg, and back up from that if we have to
          // restart.
          // uncond after here
+         stmt( IRStmt_Put( OFFB_IP_AT_SYSCALL,
+                           mkU32(guest_R15_curr_instr_notENC | 1) ) );
          llPutIReg(15, mkU32( (guest_R15_curr_instr_notENC + 2) | 1 ));
          dres.jk_StopHere = Ijk_Sys_syscall;
          dres.whatNext    = Dis_StopHere;
@@ -19468,8 +19475,8 @@ DisResult disInstr_THUMB_WRK (
       UInt rN = INSN0(3,0);
       UInt rD = INSN1(11,8);
       Bool valid = !isBadRegT(rN) && !isBadRegT(rD);
-      /* but allow "subw sp, sp, #uimm12" */
-      if (!valid && rD == 13 && rN == 13)
+      /* but allow "subw x(not pc), sp, #uimm12" */
+      if (!valid && rD != 15 && rN == 13)
          valid = True;
       if (valid) {
          IRTemp argL  = newTemp(Ity_I32);
@@ -19610,13 +19617,13 @@ DisResult disInstr_THUMB_WRK (
       /* but allow "add.w reg, sp, reg, lsl #N for N=0,1,2 or 3
          (T3) "ADD (SP plus register) */
       if (!valid && INSN0(8,5) == BITS4(1,0,0,0) // add
-          && rD != 15 && rN == 13 && imm5 <= 3 && how == 0) {
+          && rD != 15 && rN == 13 && imm5 <= 31 && how == 0) {
          valid = True;
       }
-      /* also allow "sub.w reg, sp, reg   w/ no shift
+      /* also allow "sub.w reg, sp, reg, lsl #N for N=0,1,2 or 3
          (T1) "SUB (SP minus register) */
       if (!valid && INSN0(8,5) == BITS4(1,1,0,1) // sub
-          && rD != 15 && rN == 13 && imm5 == 0 && how == 0) {
+          && rD != 15 && rN == 13 && imm5 <= 31 && how == 0) {
          valid = True;
       }
       if (valid) {

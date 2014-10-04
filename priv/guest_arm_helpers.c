@@ -998,6 +998,56 @@ UInt LibVEX_GuestARM_get_cpsr ( /*IN*/const VexGuestARMState* vex_state )
 }
 
 /* VISIBLE TO LIBVEX CLIENT */
+void LibVEX_GuestARM_put_cpsr_c ( UInt new_carry_flag,
+                              /*MOD*/VexGuestARMState* vex_state )
+{
+   // NZCV
+   UInt oszacp = armg_calculate_flags_nzcv(
+               vex_state->guest_CC_OP,
+               vex_state->guest_CC_DEP1,
+               vex_state->guest_CC_DEP2,
+               vex_state->guest_CC_NDEP
+            );
+    if (new_carry_flag & 1) {
+    	oszacp |= ARMG_CC_MASK_C;
+    }
+	else {
+		oszacp &= ~ARMG_CC_MASK_C;
+	}
+	vex_state->guest_CC_OP = ARMG_CC_OP_COPY;
+	vex_state->guest_CC_DEP1 = oszacp;
+	vex_state->guest_CC_DEP2 = 0;
+	vex_state->guest_CC_NDEP = 0;
+}
+
+void
+LibVEX_GuestARM_set_cpsr ( UInt cpsr,
+                              /*MOD*/VexGuestARMState* vex_state )
+{
+   // NZCV
+   UInt osnzcv = cpsr & (ARMG_CC_MASK_N | ARMG_CC_MASK_Z | ARMG_CC_MASK_V | ARMG_CC_MASK_C);
+	vex_state->guest_CC_OP = ARMG_CC_OP_COPY;
+	vex_state->guest_CC_DEP1 = osnzcv;
+	vex_state->guest_CC_DEP2 = 0;
+	vex_state->guest_CC_NDEP = 0;
+   
+   armg_calculate_flags_nzcv(
+                  vex_state->guest_CC_OP,
+                  vex_state->guest_CC_DEP1,
+                  vex_state->guest_CC_DEP2,
+                  vex_state->guest_CC_NDEP
+                     );
+   
+   // Q
+   vex_state->guest_QFLAG32 = (cpsr & (1 << 27));
+   // GE
+   vex_state->guest_GEFLAG0 = (cpsr & (1 << 16));
+   vex_state->guest_GEFLAG1 = (cpsr & (1 << 17));
+   vex_state->guest_GEFLAG2 = (cpsr & (1 << 18));
+   vex_state->guest_GEFLAG3 = (cpsr & (1 << 19));
+}
+
+/* VISIBLE TO LIBVEX CLIENT */
 void LibVEX_GuestARM_initialise ( /*OUT*/VexGuestARMState* vex_state )
 {
    vex_state->host_EvC_FAILADDR = 0;
@@ -1078,8 +1128,8 @@ void LibVEX_GuestARM_initialise ( /*OUT*/VexGuestARMState* vex_state )
 
    /* Not in a Thumb IT block. */
    vex_state->guest_ITSTATE = 0;
-
-   vex_state->padding1 = 0;
+   vex_state->guest_SC_CLASS = 0;
+   //vex_state->padding1 = 0;
 }
 
 
@@ -1167,7 +1217,7 @@ VexGuestLayout
 
           /* Describe any sections to be regarded by Memcheck as
              'always-defined'. */
-          .n_alwaysDefd = 10,
+          .n_alwaysDefd = 11,
 
           /* flags thunk: OP is always defd, whereas DEP1 and DEP2
              have to be tracked.  See detailed comment in gdefs.h on
@@ -1182,7 +1232,8 @@ VexGuestLayout
                  /* 6 */ ALWAYSDEFD(guest_NRADDR),
                  /* 7 */ ALWAYSDEFD(guest_IP_AT_SYSCALL),
                  /* 8 */ ALWAYSDEFD(guest_TPIDRURO),
-                 /* 9 */ ALWAYSDEFD(guest_ITSTATE)
+                 /* 9 */ ALWAYSDEFD(guest_ITSTATE),
+                 /* 10 */ ALWAYSDEFD(guest_SC_CLASS)
                }
         };
 
