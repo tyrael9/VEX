@@ -159,6 +159,9 @@ void foo ( void )
    GENOFFSET(ARM,arm,R6);
    GENOFFSET(ARM,arm,R7);
    GENOFFSET(ARM,arm,R8);
+   GENOFFSET(ARM,arm,R9);
+   GENOFFSET(ARM,arm,R10);
+   GENOFFSET(ARM,arm,R11);
    GENOFFSET(ARM,arm,R12);
    GENOFFSET(ARM,arm,R13);
    GENOFFSET(ARM,arm,R14);
