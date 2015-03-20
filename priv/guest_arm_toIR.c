@@ -19158,6 +19158,17 @@ DisResult disInstr_THUMB_WRK (
          /* ------ NOP ------ */
          DIP("nop\n");
          goto decode_success;
+      case 0xBF10:
+         /* ------ YIELD ------ */
+         /* YIELD gets used as a spin-loop hint.  Do the usual thing,
+            which is to continue after yielding. */
+         stmt( IRStmt_Exit( unop(Iop_32to1, mkexpr(condT)),
+                            Ijk_Yield,
+                            IRConst_U32((guest_R15_curr_instr_notENC + 2) 
+                                        | 1 /*CPSR.T*/),
+                            OFFB_R15T ));
+         DIP("yield\n");
+         goto decode_success;
       case 0xBF20:
          /* ------ WFE ------ */
          /* WFE gets used as a spin-loop hint.  Do the usual thing,
