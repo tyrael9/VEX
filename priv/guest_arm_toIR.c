@@ -19456,6 +19456,8 @@ DisResult disInstr_THUMB_WRK (
          this is (T2) of "SUB (SP minus immediate)" */
       if (!valid && !isRSB && rN == 13 && rD != 15)
          valid = True;
+      if (!valid && !isRSB && rD == 13)
+         valid = True;
       if (valid) {
          IRTemp argL  = newTemp(Ity_I32);
          IRTemp argR  = newTemp(Ity_I32);
