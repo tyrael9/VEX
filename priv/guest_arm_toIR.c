@@ -19491,6 +19491,8 @@ DisResult disInstr_THUMB_WRK (
       /* but allow "subw x(not pc), sp, #uimm12" */
       if (!valid && rD != 15 && rN == 13)
          valid = True;
+      if (!valid && rD == 13)
+         valid = True;
       if (valid) {
          IRTemp argL  = newTemp(Ity_I32);
          IRTemp argR  = newTemp(Ity_I32);
