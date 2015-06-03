@@ -17227,6 +17227,33 @@ DisResult disInstr_ARM_WRK (
       }
       /* fall through */
    }
+   
+   /* -------------- read CP15 c14 register, op0 ------------- */
+   /* mrrc<c>     p15, 0, Rt, Rt2, c14
+   */
+   if (0x0C500F0E == (insn & 0x0FF00FFF)) {
+      UInt rT = INSN(15,12);
+      UInt rT2 = INSN(19,16);
+      Bool valid = True;
+      if ((rT == 15) || (rT2 == 15) || (rT == rT2)) valid = False;
+      if (valid) {
+         IRTemp   val  = newTemp(Ity_I64);
+         IRExpr** args = mkIRExprVec_0();
+         IRDirty* d    = unsafeIRDirty_1_N ( 
+                            val, 
+                            0/*regparms*/, 
+                            "armg_dirtyhelper_mrrc_p15_c14_op0", 
+                            &armg_dirtyhelper_mrrc_p15_c14_op0, 
+                            args 
+                         );
+         /* execute the dirty call, dumping the result in val. */
+         stmt( IRStmt_Dirty(d) );
+         putIRegA(rT2, unop(Iop_64HIto32, mkexpr(val)), condT, Ijk_Boring);
+         putIRegA(rT, unop(Iop_64to32, mkexpr(val)), condT, Ijk_Boring);
+         DIP("mrrc%s p15, 0, r%u, r%u, c14\n", nCC(INSN_COND), rT, rT2);
+         goto decode_success;
+      }
+   }
 
    /* Handle various kinds of barriers.  This is rather indiscriminate
       in the sense that they are all turned into an IR Fence, which
@@ -21593,6 +21620,36 @@ DisResult disInstr_THUMB_WRK (
          goto decode_success;
       }
       /* fall through */
+   }
+   
+   /* -------------- read CP15 c14 register, op0 ------------- */
+   /* mrrc     p15, 0, Rt, Rt2, c14
+   */
+   if ((INSN0(15,4) == 0xEC5) && (INSN1(11,0) == 0x0F0E)) {
+      UInt rT = INSN1(15,12);
+      UInt rT2 = INSN0(3,0);
+      Bool valid = True;
+      if ((rT == 15) || (rT2 == 15) || (rT == rT2) ||
+          (rT == 13) || (rT2 == 13)) {
+             valid = False;
+      }
+      if (valid) {
+         IRTemp   val  = newTemp(Ity_I64);
+         IRExpr** args = mkIRExprVec_0();
+         IRDirty* d    = unsafeIRDirty_1_N ( 
+                            val, 
+                            0/*regparms*/, 
+                            "armg_dirtyhelper_mrrc_p15_c14_op0", 
+                            &armg_dirtyhelper_mrrc_p15_c14_op0, 
+                            args 
+                         );
+         /* execute the dirty call, dumping the result in val. */
+         stmt( IRStmt_Dirty(d) );
+         putIRegT(rT2, unop(Iop_64HIto32, mkexpr(val)), IRTemp_INVALID);
+         putIRegT(rT, unop(Iop_64to32, mkexpr(val)), IRTemp_INVALID);
+         DIP("mrrc p15, 0, r%u, r%u, c14\n", rT, rT2);
+         goto decode_success;
+      }
    }
 
    /* ------------------- CLREX ------------------ */

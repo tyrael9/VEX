@@ -110,7 +110,12 @@ UInt armg_calculate_condition ( UInt cond_n_op /* ARMCondcode << 4 | cc_op */,
 extern 
 UInt armg_calculate_flag_qc ( UInt resL1, UInt resL2,
                               UInt resR1, UInt resR2 );
+                              
+/* --- DIRTY HELPERS --- */
 
+/* Read the generic timer register in p15, c14, op0 */
+extern
+ULong armg_dirtyhelper_mrrc_p15_c14_op0 ( void );
 
 /*---------------------------------------------------------*/
 /*--- Condition code stuff                              ---*/

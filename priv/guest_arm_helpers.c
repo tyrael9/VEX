@@ -937,6 +937,22 @@ IRExpr* guest_arm_spechelper ( const HChar* function_name,
 }
 
 
+/* Read the physical timer counter in p15, c14, operation 0 */
+/* Horrible hack. On non-arm platforms, return 1 */
+ULong armg_dirtyhelper_mrrc_p15_c14_op0 ( void )
+{
+#  if defined(__arm__)
+   ULong res;
+   __asm__ __volatile__("mrrc p15, 0, %Q0, %R0, c14"
+                        : "=r" (res)
+                        );
+   return res;
+#  else
+   return 1ULL;
+#  endif
+}
+
+
 /*----------------------------------------------*/
 /*--- The exported fns ..                    ---*/
 /*----------------------------------------------*/
